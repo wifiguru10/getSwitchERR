@@ -217,7 +217,8 @@ def getBadPorts(switch_statuses):
 def getUplinks(switch_statuses):
     uplinks = {}
     for s in switch_statuses:
-        if "MS" in str(s):
+        if "isUplink" in s and s['isUplink'] == True:
+        #if "MS" in str(s):
             uplinks[s['portId']] = s
     return uplinks
 
@@ -274,7 +275,9 @@ for sn in crc:
 
     org_networks_devices[d['org_id']][d['networkId']].append(sn)
 
-f = open("switch_CRC_errors.txt", 'w')
+date_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+
+f = open(f"switch_CRC_errors_{date_string}.txt", 'w')
 for o in org_networks_devices:
     org = getOrg(o)
     print(f"Organization[{org['name']}] orgID[{o}]")
@@ -295,7 +298,7 @@ for o in org_networks_devices:
     f.write('\n')
 f.close()
 
-f = open("switch_CRC_errors.json", 'w')
+f = open(f"switch_CRC_errors_{date_string}.json", 'w')
 f.writelines(str(org_networks_devices))
 f.close()
 
