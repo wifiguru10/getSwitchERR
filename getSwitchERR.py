@@ -222,6 +222,13 @@ def getUplinks(switch_statuses):
             uplinks[s['portId']] = s
     return uplinks
 
+def getUnique(list_source):
+    result = []
+    for l in list_source:
+        if not l in result: result.append(l)
+    return result
+
+
 #Find switches alerting
 switches_erroring = []
 switches_alerting = []
@@ -237,6 +244,9 @@ for s in switches_statuses:
         if len(p['warnings']) > 0:
             if not s in switches_alerting:
                 switches_alerting.append(s)
+
+
+date_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 bad_switches = {}
 for sn in switches_statuses:
@@ -259,10 +269,17 @@ for sn in switches_statuses:
     #print(bad_ports)
         print()
 
+f = open(f"switch_bad_errors_{date_string}.txt", 'w')
+for s in bad_switches:
+    f.write(f"{s}: {str(bad_switches[s])}\n")
+f.close()
+
 crc = []
 for b in bad_switches:
-    if "CRC" in str(bad_switches[b]):
-        crc.append(b)
+    ports = bad_switches[b]
+    for p in ports:
+        if "CRC" in str(ports[p]['errors']) or "CRC" in str(ports[p]['warnings']):
+            crc.append(b)
 
 #Build a dict of orgs, networks and devices impacted
 org_networks_devices = {}
@@ -274,8 +291,6 @@ for sn in crc:
         org_networks_devices[d['org_id']][d['networkId']] = []
 
     org_networks_devices[d['org_id']][d['networkId']].append(sn)
-
-date_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 f = open(f"switch_CRC_errors_{date_string}.txt", 'w')
 for o in org_networks_devices:
@@ -292,8 +307,13 @@ for o in org_networks_devices:
             port_list = []
             for p in bad_switches[d].keys():
                 port_list.append(p)
-            print(f"\tDevice [{d}] Name[{dev['name']}] Ports{port_list}")
-            f.write(f"\tDevice [{d}] Name[{dev['name']}] Ports{port_list}\n")
+            alertsP = []
+            for p in bad_switches[d]:
+                alertsP = alertsP + bad_switches[d][p]['errors']
+                alertsP = alertsP + bad_switches[d][p]['warnings']
+            alertsP = getUnique(alertsP)
+            print(f"\tDevice [{d}] Name[{dev['name']}] Ports{port_list} Alerts{alertsP}")
+            f.write(f"\tDevice [{d}] Name[{dev['name']}] Ports{port_list} Alerts{alertsP}\n")
     print()
     f.write('\n')
 f.close()
