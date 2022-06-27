@@ -218,8 +218,10 @@ def getUplinks(switch_statuses):
     uplinks = {}
     for s in switch_statuses:
         if "isUplink" in s and s['isUplink'] == True:
-        #if "MS" in str(s):
             uplinks[s['portId']] = s
+        elif "cdp" in s and "capabilities" in s['cdp']:
+            if s['cdp']['capabilities'] == 'Switch':
+                uplinks[s['portId']] = s
     return uplinks
 
 def getUnique(list_source):
