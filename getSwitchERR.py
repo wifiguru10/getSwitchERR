@@ -314,8 +314,9 @@ for o in org_networks_devices:
                 alertsP = alertsP + bad_switches[d][p]['errors']
                 alertsP = alertsP + bad_switches[d][p]['warnings']
             alertsP = getUnique(alertsP)
-            print(f"\tDevice [{d}] Name[{dev['name']}] Ports{port_list} Alerts{alertsP}")
-            f.write(f"\tDevice [{d}] Name[{dev['name']}] Ports{port_list} Alerts{alertsP}\n")
+            d2 = db.devices.getDevice(dev['serial'])
+            print(f"\tDevice [{d}] Name[{dev['name']}] Model[{dev['model']}] Ports{port_list} Alerts{alertsP} Url[{d2['url']}]")
+            f.write(f"\tDevice [{d}] Name[{dev['name']}] Model[{dev['model']}] Ports{port_list} Alerts{alertsP} Url[{d2['url']}]\n")
     print()
     f.write('\n')
 f.close()
@@ -324,4 +325,5 @@ f = open(f"switch_CRC_errors_{date_string}.json", 'w')
 f.writelines(str(org_networks_devices))
 f.close()
 
+print()
 
