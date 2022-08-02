@@ -58,7 +58,11 @@ async def getOrg_Templates(aio, org_id):
     return org_id, "templates", result
 
 async def getSwitchStatuses_Device(aio, serial):
-    result = await aio.switch.getDeviceSwitchPortsStatuses(serial)
+    try:
+        result = await aio.switch.getDeviceSwitchPortsStatuses(serial)
+    except Exception as e:
+        print(f"Error on serial[{serial}] error {e}")
+        result = None
     return serial, "statuses", result
 
 async def getSwitchPorts_Device(aio, serial):
@@ -74,9 +78,8 @@ async def getEverything():
                 log_file_prefix=os.path.basename(__file__)[:-3],
                 log_path='Logs/',
                 maximum_concurrent_requests=10,
-                maximum_retries= 100,
-                nginx_429_retry_wait_time=60,
-                wait_on_rate_limit=True,
+                maximum_retries= 50,
+                wait_on_rate_limit=False,
                 print_console=False,
                 
         ) as aio:
@@ -120,8 +123,9 @@ async def getEverythingDevice(device_list):
                 log_file_prefix=os.path.basename(__file__)[:-3],
                 log_path='Logs/',
                 maximum_concurrent_requests=10,
-                maximum_retries= 100,
-                wait_on_rate_limit=True,
+                maximum_retries= 50,
+                #nginx_429_retry_wait_time=,
+                wait_on_rate_limit=False,
                 print_console=False,
                 
         ) as aio:
@@ -203,12 +207,15 @@ print()
 
 
 def showBadPorts(switch_statuses):
+    if switch_statuses == None: return
     for p in switch_statuses:
         if len(p['errors']) > 0 or len(p['warnings']) > 0:
             print(p)
+    return
 
 def getBadPorts(switch_statuses):
     errors = {}
+    if switch_statuses == None: return errors
     for s in switch_statuses:
         if len(s['errors']) > 0 or len(s['warnings']) > 0:
             errors[s['portId']] = s
@@ -216,6 +223,7 @@ def getBadPorts(switch_statuses):
 
 def getUplinks(switch_statuses):
     uplinks = {}
+    if switch_statuses == None: return uplinks
     for s in switch_statuses:
         if "isUplink" in s and s['isUplink'] == True:
             uplinks[s['portId']] = s
@@ -236,6 +244,7 @@ switches_erroring = []
 switches_alerting = []
 for s in switches_statuses:
     ports = switches_statuses[s]
+    if ports == None: continue #next one plz
     for p in ports:
         if 'Port disconnected' in p['errors']: p['errors'].remove('Port disconnected')
         if 'Port disabled' in p['errors']: p['errors'].remove('Port disabled')
@@ -258,13 +267,13 @@ for sn in switches_statuses:
     bad_ports = getBadPorts(stats)
     bad_uplinks = {}
     if len(bad_ports) > 0:
-        print(f"Switch[{sn}] has bad ports!!!")
+        #print(f"Switch[{sn}] has bad ports!!!")
         for bp in bad_ports:
             if bp in uplinks:
                 bad_uplinks[bp] = bad_ports[bp]
-        print(bad_ports.keys())
+        #print(bad_ports.keys())
     if len(bad_uplinks) > 0:
-        print(f"Switch[{sn}] has bad uplinks!!!")
+        #print(f"Switch[{sn}] has bad uplinks!!!")
         bad_switches[sn] = bad_uplinks
     
         print(f"Switch[{sn}] Number of bad ports[{len(bad_ports)}], number of uplinks[{len(uplinks)}]")
